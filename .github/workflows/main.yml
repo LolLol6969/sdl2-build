@@ -1,0 +1,39 @@
+name: Build libSDL2.so (armeabi-v7a)
+
+on:
+  workflow_dispatch:
+    inputs:
+      sdl_tag:
+        description: "Tag SDL2 (deve combaciare con gli header del port: 2.30.9)"
+        default: "release-2.30.9"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Scarica SDL2
+        run: |
+          git clone --depth 1 --branch "${{ inputs.sdl_tag }}" https://github.com/libsdl-org/SDL.git sdl
+
+      - name: Compila con NDK
+        working-directory: sdl
+        run: |
+          "$ANDROID_NDK_LATEST_HOME/ndk-build" \
+            NDK_PROJECT_PATH=. \
+            APP_BUILD_SCRIPT=./Android.mk \
+            APP_PLATFORM=android-24 \
+            APP_ABI=armeabi-v7a \
+            NDK_OUT=./obj \
+            NDK_LIBS_OUT=./libs \
+            -j"$(nproc)"
+
+      - name: Verifica
+        run: |
+          ls -l sdl/libs/armeabi-v7a/
+          file sdl/libs/armeabi-v7a/libSDL2.so
+
+      - name: Pubblica artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: libSDL2-armeabi-v7a
+          path: sdl/libs/armeabi-v7a/libSDL2.so
